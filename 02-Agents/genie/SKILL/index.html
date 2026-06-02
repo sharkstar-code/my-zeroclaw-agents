@@ -250,19 +250,17 @@
 <h1 id="skill-genie">SKILL - Genie</h1>
 <h2 id="genie-experience-curator">✨ Genie — Experience Curator</h2>
 <h3 id="skill-1-intelligence-acquisition-filtering">SKILL 1: Intelligence Acquisition &amp; Filtering</h3>
-<p><strong>Trigger:</strong> The user sends a [Keyword] or [Topic] via Telegram.</p>
+<p><strong>Trigger:</strong> The user sends a Keyword or Topic via Telegram.</p>
 <h4 id="execution-protocol">Execution Protocol:</h4>
 <ol>
-<li><strong>Search:</strong> Invoke web_search_tool to gather the latest data on the [Keyword] as it relates to events in London, England over the next 14 days.
-    <strong>CONSTRAINT: Maximum 8-10 targeted searches.</strong> Prioritize: core institutional venues (universities, major cultural institutions), 2-3 key independent/grassroots organizations aligned with [Keyword]. Skip exhaustive secondary venues, tangential crossovers, and niche platforms to reduce token accumulation.</li>
-<li><strong>Synthesise &amp; Align:</strong> Filter through the 'London Junkie'
-lens. Answer: how will this surprise and delight a long-time, highly educated, philosophically-minded 
-London resident on the lookout for education and entertainment in the city.</li>
+<li><strong>Search:</strong> Invoke web_search_tool to gather the latest data on the Keyword as it relates to events in London, England over the next 14 days.
+    <strong>CONSTRAINT: Maximum 8-10 targeted searches.</strong> Prioritize: core institutional venues (universities, major cultural institutions), 2-3 key independent/grassroots organizations aligned with Keyword. Skip exhaustive secondary venues, tangential crossovers, and niche platforms to reduce token accumulation.</li>
+<li><strong>Synthesise &amp; Align:</strong> Extract specific events or runs of events (e.g. a single lecture is a singular event. An exhibition or theatre production is a run of events). Filter through the 'London Junkie' lens. Answer: how will this surprise and delight a long-time, highly educated, philosophically-minded London resident on the lookout for education and entertainment in the city.</li>
 <li><strong>Format the Output:</strong> Reply via Telegram in this exact
 structure:<ul>
 <li><strong>TL;DR:</strong> one-sentence summary.</li>
 <li><strong>Why it matters:</strong> why a London Junkie should care.
-Rare opportunity to see? Opportunity to meet like-minded folk? Incredible spectacle? Well-regarded by the cognoscenti?</li>
+Rare opportunity to see? Opportunity to meet like-minded folk? Incredible spectacle? Well-regarded by the cognoscenti? Keep this section brief.</li>
 <li><strong>Where and when:</strong> Dates and times (if provided) and locations (essential).</li>
 </ul>
 </li>
@@ -270,13 +268,16 @@ Rare opportunity to see? Opportunity to meet like-minded folk? Incredible specta
 <li><strong>ONE file per query</strong> — consolidate all findings (all events, all details) into a single .md file rather than separate files per event.</li>
 <li>Naming convention: YYYY-MM-DD_[Keyword].md (e.g., 2026-05-15_Philosophy-Events.md)</li>
 <li><strong>Structure within file:</strong> Use headers to organize by event/category, but keep all related findings in one document.</li>
-<li><strong>INCREMENTAL WRITING:</strong> Write the archive file in 3 discrete chunks to avoid token exhaustion:<ul>
-<li><strong>Chunk 1:</strong> Header + Key Findings + Top-tier events/recommendations (file_write call #1)</li>
-<li><strong>Chunk 2:</strong> Mid-tier events + secondary recommendations (file_write call #2)</li>
-<li><strong>Chunk 3:</strong> Niche/specialized events + Synthesis + Technical Notes (file_write call #3)</li>
-<li>Each write completes before moving to the next section. This distributes token load and ensures file persistence before context limit is reached.</li>
+<li><strong>Conciseness:</strong> Keep descriptions as concise as possible whilst capturing all relevant information.</li>
+<li><strong>Single write:</strong> Write the complete archive in one file_write call. Include all sections: header, top-tier events, mid-tier events, niche events, and technical notes.</li>
 </ul>
 </li>
+<li><strong>Create Minimal Archive:</strong> After the full archive is complete, create a parallel minimal version with suffix <code>_minimal</code>:<ul>
+<li><strong>Filename:</strong> YYYY-MM-DD_[Keyword]_minimal.md (e.g., 2026-05-15_Philosophy-Events_minimal.md)
+ - <strong>Location:</strong> Same archive folder as full file
+ - <strong>Format:</strong> Ultra-lean, one event per line: <code>- [Event Name] | [TL;DR] | [Date] | [Location]</code>
+ - <strong>Purpose:</strong> Lightweight reference for weekly synthesis (avoids re-reading full archives)
+ - <strong>Execution:</strong> Single file_write call; no chunking needed (target ~20-40 lines total)</li>
 </ul>
 </li>
 </ol>
@@ -284,37 +285,30 @@ Rare opportunity to see? Opportunity to meet like-minded folk? Incredible specta
 <p><strong>Trigger:</strong> User command, or weekend automated trigger.</p>
 <h4 id="execution-protocol_1">Execution Protocol:</h4>
 <ol>
-<li><strong>Retrieve:</strong> Use file_read to read all .md files saved in /root/.zeroclaw/workspace/genie/archive/ over the last 7 days.
-<strong>CONSTRAINT: Read files in batches of 3-4 files per operation.</strong> Do NOT load all files at once into context.</li>
-<li><strong>Synthesise (Incremental):</strong> As you read each batch:<ul>
-<li>Extract top 2-3 events per file</li>
-<li>Identify category (Philosophy, Theatre, Art, Festival, etc.)</li>
-<li>Group by date</li>
-<li>DO NOT attempt full synthesis until all files are read</li>
-</ul>
+<li>
+<p><strong>Retrieve:</strong> Use file_read to read ONLY <code>_minimal.md</code> files from /root/.zeroclaw/workspace/genie/archive/.
+   - <strong>CRITICAL RULE: NEVER read files without the <code>_minimal</code> suffix.</strong> If a file is named <code>YYYY-MM-DD_[Keyword].md</code> (without <code>_minimal</code>), DO NOT read it. Only read <code>YYYY-MM-DD_[Keyword]_minimal.md</code> files.
+   - <strong>CONSTRAINT: Read files in batches of 3-4 files per operation.</strong> Do NOT load all files at once into context.
+   - <strong>VERIFICATION STEP:</strong> Before reading any file, confirm its filename ends with <code>_minimal.md</code>. If it does not, skip it entirely.
+   - <strong>KEY:</strong> Only minimal files. This keeps context lean and enforces the lightweight synthesis architecture.</p>
 </li>
-<li><strong>Write Chunk 1 (Header + Top Tier):</strong> After reading all files, write first file_write call:<ul>
-<li>Header with date range</li>
-<li>Executive summary (2-3 sentences)</li>
-<li>Top 5-7 unmissable events ranked by cultural leverage</li>
-<li>Quick calendar snapshot</li>
-</ul>
+<li>
+<p><strong>Synthesise (Incremental):</strong> As you read each batch:
+   - Extract top 2-3 events per file
+   - Identify category (Philosophy, Theatre, Art, Festival, etc.)
+   - Group by date
+   - DO NOT attempt full synthesis until all minimal files are read</p>
 </li>
-<li><strong>Write Chunk 2 (Category Deep Dives):</strong> Second file_write call:<ul>
-<li>Events organized by category (Philosophy, Theatre, Visual Art, Festivals, Grassroots)</li>
-<li>3-4 events per category with full TL;DR/Why it Matters/Where &amp; When</li>
-<li>Strategic recommendations for different audience types</li>
-</ul>
-</li>
-<li><strong>Write Chunk 3 (Synthesis + Archive Metadata):</strong> Third file_write call:<ul>
-<li>Pattern analysis across the week</li>
-<li>Critical concentration points (dates with multiple must-sees)</li>
-<li>Technical notes on which archive files were synthesized</li>
-<li>Closing recommendations</li>
-<li><strong>Save Location:</strong> /root/.zeroclaw/workspace/genie/weekly/</li>
-<li><strong>Naming:</strong> YYYY-MM-DD-Weekly.md</li>
-<li><strong>CRITICAL:</strong> Each file_write must complete successfully before moving to the next chunk. If token budget runs low, stop and report which chunks were written.</li>
-</ul>
+<li>
+<p><strong>INCREMENTAL WRITING:</strong> Write the weekly synthesis in 4 discrete chunks using shell append strategy:
+   - <strong>Chunk 1 (file_write call):</strong> Create file with Header + top 3 unmissable events for days 1-7
+   - <strong>Chunk 2 (shell &gt;&gt; append):</strong> Add remaining 4-7 unmissable events for days 1-7
+   - <strong>Chunk 3 (shell &gt;&gt; append):</strong> Add header + top 3 unmissable events for days 8-14
+   - <strong>Chunk 4 (shell &gt;&gt; append):</strong> Add remaining 4-7 unmissable events for days 8-14 + brief synthesis notes
+   - <strong>Verification:</strong> After each chunk, verify persistence before moving to next
+<strong>Save Location:</strong> /root/.zeroclaw/workspace/genie/weekly/
+<strong>Naming:</strong> YYYY-MM-DD-Weekly.md
+<strong>CRITICAL:</strong> Each file_write must complete successfully before moving to the next chunk. If token budget runs low, stop and report which chunks were written.</p>
 </li>
 </ol></div>
             </div>
